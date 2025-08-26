@@ -1,0 +1,10 @@
+mcp[cli]
+fastapi
+uvicorn[standard]
+python-dotenv
+textual
+openai
+
+[dev]
+black
+ruff

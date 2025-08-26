@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mcp-perplexity-agent"
+version = "0.1.0"
+description = "Web and TUI clients for MCP using Perplexity API."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+authors = [{ name = "Your Name", email = "you@example.com" }]
+
+dependencies = [
+    "mcp[cli]",
+    "fastapi",
+    "uvicorn[standard]",
+    "python-dotenv",
+    "textual",
+    "openai", # used for Perplexity API
+]
+
+[tool.setuptools]
+py-modules = ["fastmcp_quickstart", "clients", "tui"]
+
+[project.optional-dependencies]
+dev = ["black", "ruff"]
+
+[tool.black]
+line-length = 120
+
+[tool.ruff]
+select = ["E", "F", "W", "I", "UP"]
+line-length = 120

@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCP Chatbot</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div id="app-container">
+        <div id="sidebar">
+            <div class="sidebar-header">
+                <h2>MCP Server</h2>
+                <p>Connected to "Demo"</p>
+            </div>
+            <div id="server-details">
+                <details>
+                    <summary>Server Information</summary>
+                    <div id="server-info-content" class="details-content"><p>Loading...</p></div>
+                </details>
+                <details>
+                    <summary>Available Tools</summary>
+                    <ul id="tools-list" class="details-content"><li>Loading...</li></ul>
+                </details>
+                <details>
+                    <summary>Available Resources</summary>
+                    <ul id="resources-list" class="details-content"><li>Loading...</li></ul>
+                </details>
+                <details>
+                    <summary>Available Prompts</summary>
+                    <ul id="prompts-list" class="details-content"><li>Loading...</li></ul>
+                </details>
+            </div>
+        </div>
+        <div id="chat-container">
+            <div id="header">
+                <h1>Agentic AI Chatbot</h1>
+                <p>Powered by OpenAI & MCP</p>
+            </div>
+            <div class="controls-container">
+                <div class="control-group">
+                    <div class="mcp-toggle-container">
+                        <input type="checkbox" id="mcp-toggle" checked>
+                        <label for="mcp-toggle">Enable MCP Tools</label>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <div class="llm-selector-container">
+                        <label for="llm-provider-select">LLM Provider:</label>
+                        <select id="llm-provider-select">
+                            <option value="openai" selected>OpenAI</option>
+                            <option value="ollama">Ollama (Local)</option>
+                        </select>
+                        <select id="ollama-model-select" class="hidden">
+                            <option value="llama3.1:latest" selected>Llama 3.1</option>
+                            <option value="granite3.1-dense:latest">Granite 3.1</option>
+                        </select>
+                    </div>
+                    <div class="db-selector-container">
+                        <label for="db-connection-select">Database:</label>
+                        <select id="db-connection-select">
+                            <option>Loading...</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div id="messages">
+                <div class="message bot-message">
+                    Hello! I'm an OpenAI-powered chatbot. I can use tools from the MCP server to help with tasks like calculating numbers (e.g., "5 plus 8"), listing files (e.g., "list files in ."), or getting the current date and time. How can I help you?
+                </div>
+                <div id="thinking">Thinking...</div>
+            </div>
+            <div id="input-container">
+                <textarea id="message-input" placeholder="Ask about files, dates, or calculations..." rows="1" autofocus></textarea>
+                <button id="send-button" title="Send Message">&#10148;</button>
+            </div>
+        </div>
+    </div>
+    <script src="/static/script.js"></script>
+</body>
+</html>

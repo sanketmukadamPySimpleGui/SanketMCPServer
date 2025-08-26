@@ -1,0 +1,12 @@
+fastapi
+uvicorn
+python-dotenv
+mcp
+openai
+psutil
+httpx
+pymongo
+certifi
+httpx-sse
+websockets
+pydantic-settings

@@ -1,0 +1,300 @@
+/* --- General Setup --- */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: #eef2f5;
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    color: #2c3e50;
+}
+
+/* --- Main App Layout --- */
+#app-container {
+    width: 90%;
+    max-width: 1200px;
+    height: 95vh;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    display: flex;
+    overflow: hidden;
+}
+
+/* --- Sidebar (MCP Info) --- */
+#sidebar {
+    width: 320px;
+    background-color: #f8f9fa;
+    border-right: 1px solid #dee2e6;
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar-header {
+    padding: 20px;
+    border-bottom: 1px solid #dee2e6;
+    background-color: #fff;
+}
+
+.sidebar-header h2 {
+    margin: 0;
+    font-size: 1.2em;
+    color: #343a40;
+}
+
+.sidebar-header p {
+    margin: 4px 0 0;
+    font-size: 0.85em;
+    color: #6c757d;
+}
+
+#server-details {
+    padding: 15px;
+    font-size: 0.9em;
+    overflow-y: auto;
+    flex-grow: 1;
+}
+
+#sidebar details {
+    margin-bottom: 10px;
+    border-radius: 6px;
+    border: 1px solid transparent;
+    transition: border-color 0.2s;
+}
+
+#sidebar details[open] {
+    border-color: #e9ecef;
+}
+
+#sidebar summary {
+    cursor: pointer;
+    font-weight: bold;
+    color: #495057;
+    padding: 10px 15px;
+    list-style: none; /* Remove default marker */
+    position: relative;
+    transition: background-color 0.2s;
+    border-radius: 6px;
+}
+
+#sidebar summary:hover {
+    background-color: #e9ecef;
+}
+
+#sidebar summary::before {
+    content: '▶';
+    position: absolute;
+    left: 0;
+    font-size: 0.7em;
+    transform: rotate(0deg);
+    transition: transform 0.2s;
+}
+
+#sidebar details[open] > summary::before {
+    transform: rotate(90deg);
+}
+
+.details-content {
+    padding: 0 15px 10px 25px;
+    color: #495057;
+    font-size: 0.95em;
+}
+
+.details-content ul {
+    list-style-type: none;
+    padding-left: 0;
+    margin: 0;
+}
+
+.details-content li {
+    margin-bottom: 8px;
+    line-height: 1.4;
+}
+
+.details-content code {
+    background-color: #e9ecef;
+    padding: 2px 5px;
+    border-radius: 4px;
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+    color: #c7254e;
+}
+
+/* --- Chat Area --- */
+#chat-container {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.controls-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+    gap: 20px;
+}
+
+.control-group {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.mcp-toggle-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9em;
+    color: #495057;
+}
+
+.db-selector-container,
+.llm-selector-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9em;
+    color: #495057;
+}
+
+.llm-selector-container select,
+.db-selector-container select {
+    padding: 4px 8px;
+    border-radius: 4px;
+    border: 1px solid #ced4da;
+}
+
+#mcp-toggle {
+    cursor: pointer;
+}
+
+#header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 20px;
+    text-align: left;
+}
+
+#header h1 {
+    margin: 0;
+    font-size: 1.4em;
+}
+
+#header p {
+    margin: 4px 0 0;
+    font-size: 0.9em;
+    opacity: 0.8;
+}
+
+/* --- Messages --- */
+#messages {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.message {
+    padding: 10px 15px;
+    border-radius: 18px;
+    max-width: 75%;
+    line-height: 1.4;
+    word-wrap: break-word;
+}
+
+.bot-message {
+    background-color: #f1f3f5;
+    align-self: flex-start;
+    border-bottom-left-radius: 4px;
+}
+
+.user-message {
+    background-color: #4c6ef5;
+    color: white;
+    align-self: flex-end;
+    border-bottom-right-radius: 4px;
+}
+
+.tool-call-message {
+    background-color: #fff9db;
+    color: #866d3b;
+    align-self: center;
+    font-style: italic;
+    font-size: 0.9em;
+    border: 1px solid #faeec7;
+    max-width: 90%;
+    text-align: center;
+}
+
+.error-message {
+    background-color: #f2dede;
+    color: #a94442;
+    padding: 8px 12px;
+    border-radius: 6px;
+}
+
+#thinking {
+    display: none;
+    align-self: flex-start;
+    color: #868e96;
+    font-style: italic;
+}
+
+/* --- Input Area --- */
+#input-container {
+    display: flex;
+    align-items: flex-end;
+    padding: 15px;
+    border-top: 1px solid #dee2e6;
+    background-color: #fff;
+}
+
+#message-input {
+    flex-grow: 1;
+    border: 1px solid #ced4da;
+    border-radius: 20px;
+    padding: 10px 15px;
+    font-size: 1em;
+    resize: none;
+    overflow-y: hidden;
+    max-height: 100px;
+    line-height: 1.4;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+#message-input:focus {
+    outline: none;
+    border-color: #4c6ef5;
+    box-shadow: 0 0 0 3px rgba(76, 110, 245, 0.2);
+}
+
+#send-button {
+    background-color: #4c6ef5;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 44px;
+    height: 44px;
+    margin-left: 10px;
+    flex-shrink: 0;
+    cursor: pointer;
+    font-size: 1.5em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s;
+    padding-bottom: 2px; /* Visual alignment */
+}
+
+#send-button:hover {
+    background-color: #3b5bdb;
+}
+
+.hidden {
+    display: none;
+}

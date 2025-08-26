@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  mcp-server:
+    build:
+      context: .
+      dockerfile: server.Dockerfile
+    env_file:
+      - .env
+    # The host/port are now set in the Dockerfile's CMD to ensure the server
+    # listens on the correct interface.
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  mcp-client:
+    build:
+      context: .
+      dockerfile: client.Dockerfile
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    environment:
+      # This URL points to the mcp-server service within the Docker network
+      - MCP_SERVER_URL=http://mcp-server:8000/sse
+    depends_on:
+      mcp-server:
+        condition: service_healthy
+    # This is needed for host.docker.internal to work on Linux
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
