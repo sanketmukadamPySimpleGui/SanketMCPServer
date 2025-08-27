@@ -1,6 +1,20 @@
 version: '3.8'
 
 services:
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      mcp-client:
+        condition: service_healthy
+    volumes:
+      - ./nginx/certs:/etc/nginx/certs:ro
+    restart: unless-stopped
+
   mcp-server:
     build:
       context: .
@@ -15,6 +29,7 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
+    restart: unless-stopped
 
   mcp-client:
     build:
@@ -22,14 +37,19 @@ services:
       dockerfile: client.Dockerfile
     env_file:
       - .env
-    ports:
-      - "8000:8000"
     environment:
       # This URL points to the mcp-server service within the Docker network
       - MCP_SERVER_URL=http://mcp-server:8000/sse
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     depends_on:
       mcp-server:
         condition: service_healthy
+    restart: unless-stopped
     # This is needed for host.docker.internal to work on Linux
     extra_hosts:
       - "host.docker.internal:host-gateway"

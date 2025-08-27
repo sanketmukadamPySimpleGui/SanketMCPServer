@@ -6,15 +6,17 @@ This project is a Proof-of-Concept (PoC) demonstrating a powerful, agentic AI ch
 
 ## Features
 
-- **Interactive Web UI**: A clean, modern chat interface built with FastAPI and vanilla JavaScript.
+- **Interactive Web UI**: A clean, modern chat interface built with FastAPI and vanilla JavaScript, protected by a custom login page.
 - **Switchable LLM Providers**: Seamlessly switch between OpenAI's cloud models and a locally-run Ollama instance. The list of available Ollama models is detected automatically and populated in the UI.
-- **Dynamic Tool-Use**: A toggle switch allows the user to enable or disable the agent's ability to use tools, demonstrating the modularity of the MCP integration.
+- **Secure & Containerized**: The entire application stack is containerized with Docker and served securely over HTTPS via an Nginx reverse proxy.
 - **Rich Toolset**: The MCP server exposes a comprehensive set of tools for:
+  - **Authentication**: A simple, secure login mechanism protects access to the application.
   - **File System Operations**: Listing, reading, and writing files.
   - **System Interaction**: Executing shell commands and checking system resource usage.
   - **Data Analysis**: Querying an in-memory SQLite database with natural language.
 -   **Multi-Database Connectivity**: Querying multiple databases (SQLite and MongoDB) with natural language, with the ability to select the target data source from the UI.
   - **External API Calls**: Fetching real-time weather data from the OpenWeatherMap API.
+- **Dynamic Tool-Use**: A toggle switch allows the user to enable or disable the agent's ability to use tools, demonstrating the modularity of the MCP integration.
 
 ## Architecture
 
@@ -22,7 +24,7 @@ The application consists of three main components that work together to create t
 
 1.  **Web Client (`clients.py`)**: This is the user-facing application and the central orchestrator. It's a FastAPI web server that serves the chat UI. When a user sends a message, the client is responsible for communicating with the selected LLM, managing the conversation history, and invoking the MCP server when the LLM decides to use a tool.
 
-2.  **LLM Provider (OpenAI or Ollama)**: This is the "brain" of the agent. The client sends the conversation history and a description of the available MCP tools to the LLM. The LLM then decides whether to respond directly with text or to request a tool call to gather more information or perform an action.
+2.  **LLM Provider (OpenAI or Ollama)**: This is the "brain" of the agent. The client sends the conversation history and a description of the available MCP tools to the LLM. The LLM then decides whether to respond with text or to request a tool call to gather more information or perform an action.
 
 3.  **MCP Server (`fastmcp_quickstart.py`)**: This is the "hands" of the agent. It's a local server that exposes a set of capabilities (tools) to the client via the Model Context Protocol. It handles the actual execution of tasks like reading a file, running a SQL query, or calling the weather API.
 
@@ -92,14 +94,12 @@ This project is designed to be run with Docker, which is the recommended method 
 
 ### Prerequisites
 
--   Python 3.11+
--   `uv` (or `pip`) for package management.
+-   Docker and Docker Compose (or Docker Desktop / Colima).
 -   (Optional) Ollama installed with a model pulled (e.g., `ollama run llama3.1`).
--   (Optional) Docker and Colima/Docker Desktop for containerized setup.
 
 ### 1. Setup Environment
 
-Create a `.env` file in the project root directory. This file stores your secret keys and configuration.
+Create a `.env` file in the project root directory by copying the example. This file stores your secret keys and configuration.
 
 ```properties
 # .env
@@ -108,6 +108,11 @@ Create a `.env` file in the project root directory. This file stores your secret
 OPENAI_API_KEY="your_openai_api_key_here"
 OPENAI_MODEL="gpt-4-turbo" # Or another model like gpt-3.5-turbo
 OPENWEATHERMAP_API_KEY="your_openweathermap_api_key_here"
+
+# --- Application Users ---
+# A comma-separated list of users in the format "username:password".
+# These users will be able to log into the web client.
+APP_USERS="admin:supersecret123,sanket:password"
 
 # --- Database Connections ---
 # The application can connect to multiple databases defined by environment variables.

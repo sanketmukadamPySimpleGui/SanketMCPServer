@@ -35,7 +35,7 @@ class DatabaseConnector(ABC):
         pass
 
     @abstractmethod
-    def get_table_schema(self, collection_name: str) -> str:
+    def get_table_schema(self, collection_name: str) -> dict[str, Any]:
         """Get the schema of a specific table or collection."""
         pass
 
@@ -67,14 +67,10 @@ class SQLiteInMemoryConnector(DatabaseConnector):
         if self.connection:
             self.connection.close()
             logging.info("In-memory SQLite database connection closed.")
-
-    def _populate_sample_data(self) -> None:
-        if not self.connection:
-            return
-
-        cur = self.connection.cursor()
-
-        # Create Supply Chain Schema
+    
+    def _create_supply_chain_schema(self, cur: sqlite3.Cursor):
+        """Creates and populates the supply chain part of the database."""
+        logging.info("Creating Supply Chain schema...")
         cur.execute("CREATE TABLE products (id INTEGER PRIMARY KEY, name TEXT, category TEXT, unit_price REAL)")
         cur.execute("CREATE TABLE suppliers (id INTEGER PRIMARY KEY, name TEXT, contact_person TEXT, phone TEXT)")
         cur.execute("CREATE TABLE warehouses (id INTEGER PRIMARY KEY, name TEXT, location TEXT)")
@@ -82,26 +78,25 @@ class SQLiteInMemoryConnector(DatabaseConnector):
         cur.execute("CREATE TABLE purchase_orders (id INTEGER PRIMARY KEY, supplier_id INTEGER, order_date TEXT, expected_delivery_date TEXT, status TEXT, FOREIGN KEY(supplier_id) REFERENCES suppliers(id))")
         cur.execute("CREATE TABLE purchase_order_items (id INTEGER PRIMARY KEY, po_id INTEGER, product_id INTEGER, quantity INTEGER, unit_price REAL, FOREIGN KEY(po_id) REFERENCES purchase_orders(id), FOREIGN KEY(product_id) REFERENCES products(id))")
         cur.execute("CREATE TABLE shipments (id INTEGER PRIMARY KEY, po_id INTEGER, warehouse_id INTEGER, shipment_date TEXT, carrier TEXT, tracking_number TEXT, status TEXT, FOREIGN KEY(po_id) REFERENCES purchase_orders(id), FOREIGN KEY(warehouse_id) REFERENCES warehouses(id))")
-
-        # Populate Data
+        
         product_names = [("Laptop Pro", "Electronics"), ("Wireless Mouse", "Accessories"), ("Mechanical Keyboard", "Accessories"), ("27-inch 4K Monitor", "Electronics"), ("USB-C Hub", "Accessories"), ("Gaming PC", "Electronics"), ("Office Chair", "Furniture"), ("Standing Desk", "Furniture"), ("Webcam HD", "Electronics"), ("Noise-Cancelling Headphones", "Accessories")]
         products = []
         for i in range(50):
             name, category = random.choice(product_names)
             products.append((i + 1, f"{name} v{i//10 + 1}", category, round(random.uniform(20, 2000), 2)))
         cur.executemany("INSERT INTO products VALUES (?, ?, ?, ?)", products)
-
+        
         suppliers = [(i + 1, f"Supplier {chr(65+i)} Corp", f"Contact {chr(65+i)}", f"555-010{i}") for i in range(10)]
         cur.executemany("INSERT INTO suppliers VALUES (?, ?, ?, ?)", suppliers)
-
+        
         warehouses = [(1, "East Coast Hub", "New York, NY"), (2, "West Coast Hub", "Los Angeles, CA"), (3, "Midwest Center", "Chicago, IL"), (4, "Southern Depot", "Dallas, TX"), (5, "Northwest Gate", "Seattle, WA")]
         cur.executemany("INSERT INTO warehouses VALUES (?, ?, ?)", warehouses)
-
+        
         inventory = []
         for i in range(150):
             inventory.append((i + 1, random.randint(1, 50), random.randint(1, 5), random.randint(10, 500), random.randint(10, 50)))
         cur.executemany("INSERT INTO inventory VALUES (?, ?, ?, ?, ?)", inventory)
-
+        
         purchase_orders = []
         start_date = date(2023, 1, 1)
         for i in range(50):
@@ -110,7 +105,7 @@ class SQLiteInMemoryConnector(DatabaseConnector):
             status = random.choice(["Delivered", "Shipped", "Pending"])
             purchase_orders.append((i + 1, random.randint(1, 10), order_date.isoformat(), delivery_date.isoformat(), status))
         cur.executemany("INSERT INTO purchase_orders VALUES (?, ?, ?, ?, ?)", purchase_orders)
-
+        
         po_items = []
         item_id_counter = 1
         for po_id in range(1, 51):
@@ -121,7 +116,7 @@ class SQLiteInMemoryConnector(DatabaseConnector):
                 po_items.append((item_id_counter, po_id, product_id, random.randint(10, 100), product_price))
                 item_id_counter += 1
         cur.executemany("INSERT INTO purchase_order_items VALUES (?, ?, ?, ?, ?)", po_items)
-
+        
         shipments = []
         for i in range(50):
             po_id = i + 1
@@ -133,12 +128,14 @@ class SQLiteInMemoryConnector(DatabaseConnector):
             tracking_number = f"{carrier[:2].upper()}{random.randint(1000000000, 9999999999)}"
             shipments.append((i + 1, po_id, random.randint(1, 5), shipment_date.isoformat(), carrier, tracking_number, status))
         cur.executemany("INSERT INTO shipments VALUES (?, ?, ?, ?, ?, ?, ?)", shipments)
+        logging.info("✅ Supply Chain schema created and populated.")
 
-        # Create Employee Schema
+    def _create_hr_schema(self, cur: sqlite3.Cursor):
+        """Creates and populates the HR part of the database."""
+        logging.info("Creating HR schema...")
         cur.execute("CREATE TABLE departments (id INTEGER PRIMARY KEY, name TEXT)")
         cur.execute("CREATE TABLE employees (id INTEGER PRIMARY KEY, name TEXT, department_id INTEGER, salary REAL, hire_date TEXT, FOREIGN KEY(department_id) REFERENCES departments(id))")
 
-        # Populate Employee Data
         departments = [(1, "Engineering"), (2, "Sales"), (3, "Marketing"), (4, "Human Resources"), (5, "Finance")]
         cur.executemany("INSERT INTO departments VALUES (?, ?)", departments)
 
@@ -155,6 +152,16 @@ class SQLiteInMemoryConnector(DatabaseConnector):
             (10, "Jane Doe", 4, 60000, "2022-10-05"),
         ]
         cur.executemany("INSERT INTO employees VALUES (?, ?, ?, ?, ?)", employees)
+        logging.info("✅ HR schema created and populated.")
+
+    def _populate_sample_data(self) -> None:
+        if not self.connection:
+            return
+
+        cur = self.connection.cursor()
+
+        self._create_supply_chain_schema(cur)
+        self._create_hr_schema(cur)
 
         self.connection.commit()
 
@@ -163,18 +170,16 @@ class SQLiteInMemoryConnector(DatabaseConnector):
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
         return [row[0] for row in cursor.fetchall()]
 
-    def get_table_schema(self, collection_name: str) -> str:
+    def get_table_schema(self, collection_name: str) -> dict[str, Any]:
         cursor = self.connection.cursor()
         try:
             cursor.execute(f"PRAGMA table_info('{collection_name}');")
             columns = cursor.fetchall()
             if not columns:
-                return f"Error: Table '{collection_name}' not found."
-            schema_str = f"Schema for table '{collection_name}':\n"
-            schema_str += "\n".join([f"- {col[1]} ({col[2]})" for col in columns])
-            return schema_str
+                return {"error": f"Table '{collection_name}' not found."}
+            return {"schema": {"columns": [{"name": col[1], "type": col[2]} for col in columns]}}
         except sqlite3.Error as e:
-            return f"Database error: {e}"
+            return {"error": f"Database error: {e}"}
 
     def run_sql_query(self, sql_query: str) -> dict[str, Any]:
         logging.info(f"Executing SQL query: {sql_query!r}")
@@ -229,18 +234,9 @@ class MongoDbConnector(DatabaseConnector):
             self.client.close()
             logging.info("MongoDB connection closed.")
 
-    def _populate_sample_data(self) -> None:
-        """Creates and populates a sample Retail Order-to-Cash schema."""
-        if self.db is None:
-            return
-
-        logging.info("Populating MongoDB with Retail Order-to-Cash sample data...")
-        # Clear existing collections
-        self.db.customers.drop()
-        self.db.products.drop()
-        self.db.orders.drop()
-
-        # Customers
+    def _populate_customers(self):
+        """Generates and inserts sample customer data."""
+        logging.info("Populating MongoDB customers...")
         customers = []
         for i in range(50):
             customers.append({
@@ -255,8 +251,11 @@ class MongoDbConnector(DatabaseConnector):
                 "join_date": (date.today() - timedelta(days=random.randint(30, 1000))).isoformat()
             })
         self.db.customers.insert_many(customers)
+        return customers
 
-        # Products
+    def _populate_products(self):
+        """Generates and inserts sample product data."""
+        logging.info("Populating MongoDB products...")
         products = []
         for i in range(50):
             products.append({
@@ -267,8 +266,11 @@ class MongoDbConnector(DatabaseConnector):
                 "stock": random.randint(0, 200)
             })
         self.db.products.insert_many(products)
+        return products
 
-        # Orders
+    def _populate_orders(self, customers, products):
+        """Generates and inserts sample order data based on customers and products."""
+        logging.info("Populating MongoDB orders...")
         orders = []
         for i in range(100):
             customer = random.choice(customers)
@@ -297,6 +299,22 @@ class MongoDbConnector(DatabaseConnector):
                 "total_amount": round(total_amount, 2)
             })
         self.db.orders.insert_many(orders)
+
+    def _populate_sample_data(self) -> None:
+        """Creates and populates a sample Retail Order-to-Cash schema."""
+        if self.db is None:
+            return
+
+        logging.info("Populating MongoDB with Retail Order-to-Cash sample data...")
+        # Clear existing collections
+        self.db.customers.drop()
+        self.db.products.drop()
+        self.db.orders.drop()
+
+        customers = self._populate_customers()
+        products = self._populate_products()
+        self._populate_orders(customers, products)
+
         logging.info("✅ MongoDB sample data populated.")
 
     def list_tables(self) -> List[str]:
@@ -304,18 +322,14 @@ class MongoDbConnector(DatabaseConnector):
             return []
         return self.db.list_collection_names()
 
-    def get_table_schema(self, collection_name: str) -> str:
+    def get_table_schema(self, collection_name: str) -> dict[str, Any]:
         if self.db is None:
-            return "Error: Not connected to database."
+            return {"error": "Not connected to database."}
         collection = self.db[collection_name]
         sample_doc = collection.find_one()
         if not sample_doc:
-            return f"Collection '{collection_name}' is empty or does not exist."
-        
-        schema_str = f"Schema for collection '{collection_name}' (based on a sample document):\n"
-        for key, value in sample_doc.items():
-            schema_str += f"- {key} ({type(value).__name__})\n"
-        return schema_str
+            return {"error": f"Collection '{collection_name}' is empty or does not exist."}
+        return {"schema": {key: type(value).__name__ for key, value in sample_doc.items()}}
 
     def run_sql_query(self, sql_query: str) -> dict[str, Any]:
         return {"error": "This is a MongoDB connection. Use 'find_documents' instead of 'run_sql_query'."}

@@ -33,6 +33,20 @@ if not OPENWEATHERMAP_API_KEY:
         "OPENWEATHERMAP_API_KEY not found in .env file. The weather tool will be disabled."
     )
 
+# --- Constants for Shell Command Safety ---
+ALLOWED_SHELL_COMMANDS = {
+    "ls",
+    "echo",
+    "pwd",
+    "date",
+    "uname",
+    "whoami",
+}
+
+# --- Workspace for File Operations ---
+WORKSPACE_DIR = os.path.abspath("workspace")
+os.makedirs(WORKSPACE_DIR, exist_ok=True)
+
 # Create an MCP server
 mcp = FastMCP("Demo")
 
@@ -55,49 +69,77 @@ def get_current_datetime() -> str:
 
 
 @mcp.tool()
-def list_files(path: str = ".") -> list[str]:
-    """Lists files and directories at a given path."""
+def list_files(path: str = ".") -> dict[str, Any]:
+    """
+    Lists files and directories at a given path.
+    Returns a dictionary with a 'files' key on success, or an 'error' key on failure.
+    """
     try:
-        return os.listdir(path)
+        return {"files": os.listdir(path)}
     except FileNotFoundError:
-        return [f"Error: Directory not found at '{path}'"]
+        return {"error": f"Directory not found at '{path}'"}
     except NotADirectoryError:
-        return [f"Error: Path '{path}' is not a directory"]
+        return {"error": f"Path '{path}' is not a directory"}
     except PermissionError:
-        return [f"Error: Permission denied for '{path}'"]
+        return {"error": f"Permission denied for '{path}'"}
 
 
 @mcp.tool()
 def read_file(path: str) -> str:
-    """Reads the entire content of a file and returns it as a string."""
+    """
+    Reads the entire content of a file from within the designated workspace.
+    For security, this tool cannot read files outside of the 'workspace' directory.
+    """
     try:
-        with open(path, "r", encoding="utf-8") as f:
+        # Sanitize the path to prevent directory traversal attacks
+        safe_path = os.path.abspath(os.path.join(WORKSPACE_DIR, os.path.normpath(path)))
+
+        # Security check: ensure the final path is still within the workspace
+        if not safe_path.startswith(WORKSPACE_DIR):
+            return f"Error: Path '{path}' is outside the allowed workspace."
+
+        with open(safe_path, "r", encoding="utf-8") as f:
             return f.read()
     except FileNotFoundError:
-        return f"Error: File not found at '{path}'"
+        return f"Error: File not found at '{os.path.relpath(safe_path, WORKSPACE_DIR)}'"
     except Exception as e:
-        return f"Error reading file: {e}"
+        return f"Error reading file: {str(e)}"
 
 
 @mcp.tool()
 def write_file(path: str, content: str) -> str:
-    """Writes the given content to a file, overwriting it if it exists."""
+    """
+    Writes the given content to a file within the designated workspace, overwriting it if it exists.
+    For security, this tool cannot write to files outside of the 'workspace' directory.
+    """
     try:
-        with open(path, "w", encoding="utf-8") as f:
+        # Sanitize the path to prevent directory traversal attacks (e.g., "../../../etc/passwd")
+        safe_path = os.path.abspath(os.path.join(WORKSPACE_DIR, os.path.normpath(path)))
+
+        # Security check: ensure the final path is still within the workspace
+        if not safe_path.startswith(WORKSPACE_DIR):
+            return f"Error: Path '{path}' is outside the allowed workspace."
+
+        with open(safe_path, "w", encoding="utf-8") as f:
             f.write(content)
-        return f"Successfully wrote {len(content)} characters to '{path}'"
+        return f"Successfully wrote {len(content)} characters to '{os.path.relpath(safe_path, WORKSPACE_DIR)}'"
     except Exception as e:
-        return f"Error writing to file: {e}"
+        return f"Error writing to file: {str(e)}"
 
 
 @mcp.tool()
 def run_shell_command(command: str) -> str:
     """
-    Executes a shell command and returns its output.
-    WARNING: This tool can execute any command and has the potential to be dangerous.
-    Use with caution, especially in a non-local environment.
+    Executes a shell command from a pre-approved list and returns its output.
+    Allowed commands are: ls, echo, pwd, date, uname, whoami.
+    WARNING: This tool can execute commands on the server. Use with caution.
     """
     try:
+        # Security: Only allow specific commands to be run.
+        command_parts = command.strip().split()
+        if not command_parts or command_parts[0] not in ALLOWED_SHELL_COMMANDS:
+            return f"Error: Command '{command_parts[0]}' is not in the list of allowed commands."
+
         result = subprocess.run(
             command, shell=True, check=True, capture_output=True, text=True, timeout=30
         )
@@ -209,11 +251,11 @@ def list_tables(db_connection_name: str) -> dict[str, Any]:
     return {"tables_or_collections": connector.list_tables()}
 
 @mcp.tool()
-def get_table_schema(db_connection_name: str, collection_name: str) -> str:
+def get_table_schema(db_connection_name: str, collection_name: str) -> dict[str, Any]:
     """Returns the schema of a specific table (for SQL) or a sample document (for NoSQL)."""
     connector = db_manager.get_connector(db_connection_name)
     if not connector:
-        return f"Error: Database connection '{db_connection_name}' not found."
+        return {"error": f"Database connection '{db_connection_name}' not found."}
     return connector.get_table_schema(collection_name)
 
 @mcp.tool()
